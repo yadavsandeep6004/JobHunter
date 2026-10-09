@@ -13,7 +13,8 @@ import {
 } from "./linkedin/searchPosts.ts";
 import { cleanText, extractEmails, extractFormLinks, timeFromRelative, timeFromUrn } from "./extract.ts";
 import { matchPost } from "./match.ts";
-import { pushConfigured, pushPending } from "./push.ts";
+import { pushConfigured } from "./push.ts";
+import { printStats, processPending } from "./process.ts";
 
 // Re-scan a little before the last run started so nothing posted mid-run is missed.
 // Duplicates are ignored by the DB, so the overlap is safe.
@@ -181,26 +182,31 @@ try {
   if (queriesWithPosts === 0) {
     throw new Error("No search page showed any posts — LinkedIn layout may have changed. See debug/ for screenshots.");
   }
+  finishRun(db, runId, { status, ...stats }); // the run is done; ChatGPT + sheet below don't change it
+  console.log(`\nRun #${runId} success: scanned ${stats.scanned}, matched ${stats.matched}, new in DB ${stats.inserted}`);
+
+  // 2nd tab: ChatGPT writes the emails → rows go straight to the Google Sheet (drafts created there).
+  if (pushConfigured()) {
+    try {
+      printStats(await processPending(session.context));
+    } catch (err) {
+      console.warn(`Sheet/ChatGPT step failed: ${(err as Error).message} — retry with: npm run process`);
+    }
+  } else {
+    console.log("(Google Sheet not configured — see apps-script/SETUP.md)");
+  }
 } catch (err) {
   status = "failed";
   error = (err as Error).message;
   console.error(`\n✗ ${error}`);
 } finally {
   await session?.close();
-  finishRun(db, runId, { status, ...stats, error });
+  if (status === "failed") finishRun(db, runId, { status, ...stats, error });
 }
 
-console.log(`\nRun #${runId} ${status}: scanned ${stats.scanned}, matched ${stats.matched}, new in DB ${stats.inserted}`);
-if (status === "failed") console.log("(a failed run doesn't move the time window — the next run covers it again)");
-else console.log(`See them with:  npm run posts    (CSV: npm run export)`);
-
-// Send new posts to the Google Sheet (if configured in .env). Saved posts are kept even if this fails.
-if (status === "success" && pushConfigured()) {
-  try {
-    const r = await pushPending();
-    console.log(`Google Sheet: ${r.added} new row(s) added.`);
-  } catch (err) {
-    console.warn(`Google Sheet push failed: ${(err as Error).message} — retry with: npm run push`);
-  }
+if (status === "failed") {
+  console.log(`\nRun #${runId} failed: scanned ${stats.scanned}, matched ${stats.matched}, new in DB ${stats.inserted}`);
+  console.log("(a failed run doesn't move the time window — the next run covers it again)");
+  process.exit(1);
 }
-if (status === "failed") process.exit(1);
+

@@ -61,15 +61,18 @@ npm run rematch
 # Disable daily collection
 ./scripts/install-daily.sh --uninstall
 ```
-## Google Sheet + Emails
 
-One-time setup: follow [apps-script/SETUP.md](../apps-script/SETUP.md).
+## Google Sheet + Emails (ChatGPT flow)
 
-After that, every day:
+Setup and details: [apps-script/SETUP.md](../apps-script/SETUP.md).
 
-1. `npm run collect` — new posts also go to the **Jobs** tab in the sheet automatically.
-2. Sheet → **⚡ Auto Apply → 1. Write emails** — Gmail drafts with the right CV (Frontend / Backend / Full Stack).
-3. Check Gmail **Drafts**, then tick **Approve** in the sheet.
-4. Sheet → **⚡ Auto Apply → 2. Send approved drafts**.
+Every day:
 
-Push manually (e.g. if the sheet was down): `npm run push`
+1. `npm run collect` — collects LinkedIn posts, a second tab asks ChatGPT to write each email and pick the
+   Frontend / Backend / Full Stack CV, and the result goes straight to the **Jobs** sheet with a Gmail draft.
+2. Check Gmail **Drafts**, tick **Approve** in the sheet.
+3. Sheet → **⚡ Auto Apply → Send approved drafts**.
+
+Only the ChatGPT → sheet part (e.g. after hitting a ChatGPT limit): `npm run process`
+Edit what ChatGPT knows about you: `config/profile.md`
+

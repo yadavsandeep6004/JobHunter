@@ -11,7 +11,7 @@
     "export": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/show.ts --csv",
     "runs": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/show.ts --runs",
     "rematch": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/rematch.ts",
-    "push": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/push.ts",
+    "process": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/process.ts",
     "test": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx --test src/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

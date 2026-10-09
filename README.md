@@ -22,6 +22,7 @@ npm run posts        # show posts from the latest run
 npm run posts -- --all
 npm run runs         # run history (window, scanned, matched, inserted)
 npm run rematch      # after editing config/search.json: re-apply filters to saved posts
+npm run process      # ChatGPT writes the emails → Google Sheet + Gmail drafts (also runs at the end of collect)
 npm run export       # CSV → exports/posts-YYYY-MM-DD.csv
 ```
 

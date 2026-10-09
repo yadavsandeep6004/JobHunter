@@ -24,9 +24,9 @@ function baseArgs(): string[] {
   return [`--user-data-dir=${PROFILE_DIR}`, "--no-first-run", "--no-default-browser-check"];
 }
 
-/** Plain Chrome, no DevTools port — used for the one-time manual login. */
-export function launchPlainChrome(url: string): ChildProcess {
-  return spawn(chromePath(), [...baseArgs(), "--new-window", url], { stdio: "ignore" });
+/** Plain Chrome, no DevTools port — used for the one-time manual login. Each URL opens in its own tab. */
+export function launchPlainChrome(...urls: string[]): ChildProcess {
+  return spawn(chromePath(), [...baseArgs(), "--new-window", ...urls], { stdio: "ignore" });
 }
 
 export interface Session {

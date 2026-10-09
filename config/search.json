@@ -71,5 +71,11 @@
   "maxPostsPerQuery": 60,
   "stopAfterOldPosts": 8,
   "delayMs": { "min": 1500, "max": 4000 },
-  "headless": false
+  "headless": false,
+
+  "chatgpt": {
+    "maxPostsPerChat": 8,
+    "replyTimeoutSec": 120,
+    "delayMs": { "min": 4000, "max": 9000 }
+  }
 }

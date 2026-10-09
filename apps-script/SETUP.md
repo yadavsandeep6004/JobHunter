@@ -1,81 +1,56 @@
-# Google Sheet + Email setup (one time, ~10 min)
+# Google Sheet + Email setup (ChatGPT flow)
 
 Sheet: https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit
 
-## 1. Upload your 3 CVs to Google Drive
-Upload `cv/frontend.pdf`, `cv/backend.pdf`, `cv/fullstack.pdf` from this project to Google Drive.
-Keep them private — the script reads them as you.
-
-## 2. Paste the script
-1. Open the sheet → **Extensions → Apps Script**.
-2. Delete everything in `Code.gs`, paste the whole of [`Code.gs`](Code.gs) from this folder, press **Save** (💾).
-
-## 3. Run Setup
-1. Reload the sheet. A **⚡ Auto Apply** menu appears.
-2. **⚡ Auto Apply → ⚙️ Setup**.
-3. Google asks for permission → choose your account → **Advanced → Go to … (unsafe)** → **Allow**.
-   (It says "unsafe" only because it's your own unpublished script.)
-4. Paste when asked:
-   - your **new** Gemini API key (https://aistudio.google.com/apikey) — rotate the old one, it was shared in chat
-   - the Drive links of your Frontend, Backend and Full Stack CVs
-5. The last dialog shows a `SYNC_TOKEN=…` line — copy it.
-
-This creates a **Jobs** tab. Your old `Daily_Queue` / `Applications_Tracker` tabs are not used any more.
-
-## 4. Deploy the receiver (so your Mac can add rows)
-1. In Apps Script: **Deploy → New deployment** → ⚙️ **Web app**.
-2. Execute as: **Me** · Who has access: **Anyone** → **Deploy**.
-3. Copy the **Web app URL** (ends in `/exec`).
-
-"Anyone" only means the URL is reachable; every request must carry your secret `SYNC_TOKEN` or it's rejected.
-
-> If you change `Code.gs` later: **Deploy → Manage deployments → ✏️ → Version: New version → Deploy** (the URL stays the same).
-
-## 5. Connect the Mac
-In the project folder:
-
-```bash
-cp .env.example .env
+```
+npm run collect
+ ├─ Chrome tab 1: LinkedIn  → matching hiring posts
+ ├─ Chrome tab 2: ChatGPT   → for each post with an email: JSON {cv, to_email, subject, message}
+ │                            (new chat every 8 posts — config/search.json → chatgpt.maxPostsPerChat)
+ └─ POST to the sheet       → row in "Jobs" + Gmail draft with the matching CV attached
+You: check Gmail → Drafts → tick "Approve" → ⚡ Auto Apply → Send approved drafts
 ```
 
-Open `.env` and fill in both lines:
+No Gemini / API key needed — ChatGPT runs in the browser with your own account.
 
-```
-APPS_SCRIPT_URL=https://script.google.com/macros/s/…/exec
-SYNC_TOKEN=…the token from step 3…
-```
+## Update the script (when Code.gs changes)
+1. Sheet → **Extensions → Apps Script** → replace all of `Code.gs` with [`Code.gs`](Code.gs) → **Save**.
+2. **Deploy → Manage deployments → ✏️ (edit) → Version: New version → Deploy**.
+   The URL stays the same, so `.env` doesn't change. (Without this step the Mac still talks to the old code.)
+3. Run **⚡ Auto Apply → ⚙️ Setup** once — it asks for the 3 CV Drive links (leave empty to keep) and
+   re-authorises Gmail/Drive if needed.
 
-Test it:
-
-```bash
-npm run push
-```
-
-Rows appear in the **Jobs** tab.
-
----
+## First-time setup
+1. Upload `cv/frontend.pdf`, `cv/backend.pdf`, `cv/fullstack.pdf` to Google Drive.
+2. Paste `Code.gs` as above, reload the sheet, run **⚡ Auto Apply → ⚙️ Setup**, allow access
+   (**Advanced → Go to … (unsafe) → Allow** — it's your own script).
+3. **Deploy → New deployment → ⚙️ Web app** · Execute as **Me** · Who has access **Anyone** → copy the URL.
+4. On the Mac: `cp .env.example .env` and fill `APPS_SCRIPT_URL` + `SYNC_TOKEN` (shown by Setup).
+5. `npm run login` — log in to LinkedIn (tab 1) and ChatGPT (tab 2), then Cmd+Q.
 
 ## Daily use
 
 | Where | What |
 |---|---|
-| Mac | `npm run collect` — collects posts **and** pushes them to the sheet automatically |
-| Sheet | **⚡ Auto Apply → 1. Write emails** — Gemini picks the Frontend / Backend / Full Stack CV, writes the email, creates a Gmail **draft** with that CV attached (20 per run; run again for more) |
-| Gmail | Open **Drafts**, read / edit them |
-| Sheet | Tick **Approve** for the good ones (or **Approve all drafted**) |
-| Sheet | **⚡ Auto Apply → 2. Send approved drafts** — sends them, fills **Sent At** (max 40/day) |
+| Mac | `npm run collect` — LinkedIn → ChatGPT → sheet + Gmail drafts, all in one go |
+| Mac | `npm run process` — only the ChatGPT → sheet part (e.g. after a ChatGPT limit) |
+| Gmail | Drafts → read / edit |
+| Sheet | tick **Approve** (or **Approve all drafted**) → **⚡ Auto Apply → Send approved drafts** (max 40/day) |
 
 ### Status column
 
 | Status | Meaning |
 |---|---|
-| PENDING | has an email, waiting for "Write emails" |
-| DRAFTED | Gmail draft ready, waiting for your Approve |
+| DRAFTED | ChatGPT wrote it, Gmail draft with the right CV is ready — waiting for Approve |
 | SENT | sent — date in **Sent At** |
-| SKIPPED | Gemini decided it's not a fit (reason in Notes) |
-| DUPLICATE | you already emailed that address |
-| FORM | apply via the Google Form link (manual for now) |
+| SKIPPED | ChatGPT says it's not a fit (reason in Notes) |
+| DUPLICATE | that address was already emailed |
+| READY | email written but the draft failed → **Create missing drafts** |
+| FORM | apply via the Google Form link |
 | NO_EMAIL | no email in the post — open Post URL and DM the author |
-| ERROR | see Notes; set Status back to PENDING to retry |
+| PENDING | old rows from the Gemini version (see below) |
+| ERROR | send failed, see Notes |
 
-Edits you make in the Gmail draft are what gets sent (the sheet's Subject/Body columns are just a record).
+### Redo the old PENDING rows with ChatGPT
+Delete those rows in the sheet, then on the Mac: `npm run process -- --resend`
+(rows still in the sheet are skipped automatically).

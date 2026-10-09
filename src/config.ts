@@ -29,6 +29,8 @@ export interface SearchConfig {
   stopAfterOldPosts: number;
   delayMs: { min: number; max: number };
   headless: boolean;
+  /** ChatGPT tab: start a new chat after this many posts (keeps the context small). */
+  chatgpt: { maxPostsPerChat: number; replyTimeoutSec: number; delayMs: { min: number; max: number } };
 }
 
 export function loadConfig(): SearchConfig {
