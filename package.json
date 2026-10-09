@@ -1,0 +1,29 @@
+{
+  "name": "job-hunter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily LinkedIn hiring-post collector: matches posts to your profile and stores author + emails in SQLite.",
+  "scripts": {
+    "login": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/login.ts",
+    "collect": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/collect.ts",
+    "posts": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/show.ts",
+    "export": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/show.ts --csv",
+    "runs": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/show.ts --runs",
+    "rematch": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/rematch.ts",
+    "push": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/push.ts",
+    "test": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

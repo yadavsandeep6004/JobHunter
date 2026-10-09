@@ -1,0 +1,75 @@
+{
+  "queries": [
+    "hiring react developer",
+    "hiring next.js developer",
+    "hiring frontend developer",
+    "hiring node.js developer",
+    "hiring nestjs developer",
+    "hiring full stack developer",
+    "hiring mern stack developer",
+    "hiring backend developer node"
+  ],
+
+  "skills": [
+    "react", "react.js", "reactjs", "next.js", "nextjs", "next js",
+    "node", "node.js", "nodejs", "nestjs", "nest.js", "express", "express.js",
+    "typescript", "javascript", "mongodb", "mysql", "postgresql",
+    "mern", "full stack", "fullstack", "full-stack",
+    "frontend", "front end", "front-end", "backend", "back end", "back-end",
+    "tailwind", "redux"
+  ],
+  "minSkillMatches": 2,
+
+  "hiringSignals": [
+    "hiring", "we are looking", "we're looking", "job opening", "openings", "opening for",
+    "vacancy", "vacancies", "immediate joiner", "immediate joiners",
+    "send your cv", "send your resume", "share your cv", "share your resume",
+    "share cv", "share resume", "drop your cv", "drop your resume", "send cv", "send resume",
+    "interested candidates", "apply now", "job title", "join our team"
+  ],
+
+  "exclude": [
+    "#opentowork", "open to work", "i am looking for a job", "i'm looking for a job",
+    "i lost a job", "i lost my job", "seeking opportunities", "seeking a new",
+    "looking for opportunities", "looking for a new role", "unpaid", "internship only",
+    "pay to apply", "registration fee",
+    "w2", "c2c", "corp to corp", "1099", "h1b", "h-1b", "green card", "usc/gc", "us citizens", "visa sponsorship"
+  ],
+
+  "otherStacks": [
+    "java developer", "java engineer", "java full stack", "spring boot", ".net", "dotnet", "c#",
+    "python developer", "django", "php", "laravel", "salesforce", "sap", "boomi", "golang", "ruby on rails",
+    "android developer", "ios developer", "flutter", "angular"
+  ],
+  "minSkillsIfOtherStack": 4,
+
+  "homeLocations": [
+    "india", "indian", "pan india", "remote", "wfh", "work from home", "lpa", "₹", "inr",
+    "bangalore", "bengaluru", "hyderabad", "pune", "mumbai", "navi mumbai", "thane", "delhi", "new delhi", "ncr",
+    "noida", "gurgaon", "gurugram", "chennai", "kolkata", "indore", "ahmedabad", "jaipur", "chandigarh",
+    "mohali", "kochi", "trivandrum", "thiruvananthapuram", "coimbatore", "lucknow", "bhopal", "nagpur",
+    "surat", "rajkot", "vadodara", "bhubaneswar", "visakhapatnam", "mysore", "mangalore", "dehradun"
+  ],
+  "foreignLocations": [
+    "usa", "u.s.", "united states", "us based", "us-based", "canada", "toronto", "uk", "united kingdom", "london",
+    "dubai", "uae", "abu dhabi", "saudi", "riyadh", "qatar", "doha", "kuwait", "bahrain", "oman",
+    "pakistan", "karachi", "lahore", "islamabad", "bangladesh", "dhaka", "nepal", "kathmandu", "sri lanka",
+    "poland", "kraków", "krakow", "warsaw", "germany", "berlin", "munich", "netherlands", "amsterdam", "ireland",
+    "australia", "sydney", "melbourne", "singapore", "malaysia", "philippines", "vietnam", "nigeria", "lagos",
+    "kenya", "nairobi", "egypt", "cairo", "south africa",
+    "texas", "california", "new york", "new jersey", "raleigh", "phoenix", "columbus", "irving", "chicago",
+    "seattle", "boston", "atlanta", "dallas", "austin", "san francisco", "los angeles",
+    ", tx", ", nc", ", az", ", oh", ", nj", ", ca", ", va", ", ga", ", fl", ", wa", ", ma", ", il", ", pa", ", ny"
+  ],
+
+  "myExperienceYears": 4,
+  "experienceTolerance": 1,
+
+  "requireContact": false,
+
+  "firstRunLookbackHours": 24,
+  "maxPostsPerQuery": 60,
+  "stopAfterOldPosts": 8,
+  "delayMs": { "min": 1500, "max": 4000 },
+  "headless": false
+}
