@@ -102,7 +102,7 @@ export async function processPending(context: BrowserContext): Promise<ProcessSt
           break;
         }
         stats.failed++;
-        console.warn(`   ✗ ${r.author_name ?? "?"}: ${(err as Error).message} (will retry next run)`);
+        console.warn(`   ✗ ${r.author_name ?? "?"}: ${(err as Error).message.split("\n")[0]} (will retry next run)`);
         continue;
       }
 

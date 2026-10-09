@@ -68,9 +68,9 @@
   "requireContact": false,
 
   "firstRunLookbackHours": 24,
-  "maxPostsPerQuery": 60,
+  "maxPostsPerQuery": 40,
   "stopAfterOldPosts": 8,
-  "delayMs": { "min": 1500, "max": 4000 },
+  "delayMs": { "min": 3000, "max": 7000 },
   "headless": false,
 
   "chatgpt": {

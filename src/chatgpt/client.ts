@@ -66,7 +66,10 @@ export class ChatGpt {
     const page = this.page;
     await page.keyboard.press("Escape").catch(() => {}); // close "log in" nudges
     await page.evaluate(HOOK_CLIPBOARD);
-    const copiesBefore = await page.locator(COPY_RESPONSE).count();
+    // Mark the replies already on the page; the new reply is the one whose Copy button isn't marked.
+    // (Counting buttons fails in long chats because ChatGPT unmounts older messages.)
+    await page.evaluate(`document.querySelectorAll('${COPY_RESPONSE.replace(/'/g, "\\'")}').forEach((b) => b.setAttribute("data-jh-old", "1"))`);
+    const newCopy = page.locator(COPY_RESPONSE.split(", ").map((sel) => `${sel}:not([data-jh-old])`).join(", "));
 
     const composer = page.locator(COMPOSER).first();
     await composer.fill(prompt);
@@ -74,14 +77,13 @@ export class ChatGpt {
     await composer.press("Enter");
     this.turns++;
 
-    // Done when "Stop generating" is gone and a new "Copy response" button exists.
+    // Done when "Stop generating" is gone and the new reply's "Copy response" button exists.
     const deadline = Date.now() + this.opts.replyTimeoutMs;
     let sawNewReply = false;
     while (Date.now() < deadline) {
       await sleep(1000);
       const generating = await page.locator(STOP_BUTTON).count();
-      const copies = await page.locator(COPY_RESPONSE).count();
-      if (!generating && copies > copiesBefore) { sawNewReply = true; break; }
+      if (!generating && (await newCopy.count()) > 0) { sawNewReply = true; break; }
       if (!generating) {
         const body = await page.innerText("body").catch(() => "");
         if (LIMIT_RE.test(body.slice(-3000))) throw new ChatGptLimitError("ChatGPT limit reached — try again later (or log in).");
@@ -91,12 +93,22 @@ export class ChatGpt {
     if (!sawNewReply) throw new ChatGptChatError("No reply from ChatGPT in time");
     await sleep(800); // let the last tokens render
 
+    // Click "Copy response" through the DOM: ChatGPT sometimes lays a panel over it, which blocks a mouse click.
     const before = (await page.evaluate("window.__jhGpt.length")) as number;
-    await page.locator(COPY_RESPONSE).last().click();
-    await sleep(500);
+    const copyBtn = newCopy.last();
+    await copyBtn.evaluate((b) => (b as HTMLElement).click());
+    await sleep(600);
     const copied = (await page.evaluate("window.__jhGpt")) as string[];
-    if (copied.length <= before) throw new ChatGptChatError("Could not read ChatGPT's reply");
-    return copied[copied.length - 1];
+    if (copied.length > before) return copied[copied.length - 1];
+
+    // Fallback: read the reply's text from the page (the turn that holds that button).
+    const text = await copyBtn.evaluate((b) => {
+      let el: HTMLElement | null = b as HTMLElement;
+      while (el && !el.querySelector("pre, p")) el = el.parentElement;
+      return el ? el.innerText : "";
+    });
+    if (text.includes("{")) return text;
+    throw new ChatGptChatError("Could not read ChatGPT's reply");
   }
 
   async close(): Promise<void> {

@@ -9,6 +9,9 @@ test("extracts plain and obfuscated emails", () => {
   assert.deepEqual(extractEmails(t), ["hr@acme.com", "careers@foo.io"]);
   assert.deepEqual(extractEmails("mail info@elternsegen.aiplease share"), ["info@elternsegen.ai"]);
   assert.deepEqual(extractEmails("hr@company.com"), ["hr@company.com"]);
+  assert.deepEqual(extractEmails("Email: hr@bizaffix.comSubject: React"), ["hr@bizaffix.com"]);
+  assert.deepEqual(extractEmails("jobs@acme.inapply now"), ["jobs@acme.in"]);
+  assert.deepEqual(extractEmails("a@x.technology b@y.solutions c@z.info d@w.io"), ["a@x.technology", "b@y.solutions", "c@z.info", "d@w.io"]);
 });
 
 test("extracts google form links", () => {

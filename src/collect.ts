@@ -43,6 +43,8 @@ let queriesWithPosts = 0;
 
 class StopRun extends Error {}
 
+const SEARCH_PAUSED_RE = /unusual search traffic|search activity on your account has been paused/i;
+
 async function saveDebug(page: Page, label: string): Promise<string> {
   mkdirSync(DEBUG_DIR, { recursive: true });
   const base = path.join(DEBUG_DIR, `${new Date().toISOString().replace(/[:.]/g, "-")}-${label}`);
@@ -123,7 +125,13 @@ async function runQuery(page: Page, query: string) {
   }
 
   if (!(await waitForResults(page))) {
-    const noResults = /no results found/i.test(await page.innerText("body").catch(() => ""));
+    const body = await page.innerText("body").catch(() => "");
+    if (SEARCH_PAUSED_RE.test(body)) {
+      await saveDebug(page, "search-paused");
+      throw new StopRun("LinkedIn paused search for this account (\"unusual search traffic\"). " +
+        "Stop running collect for at least 24 hours, then run it at most once a day.");
+    }
+    const noResults = /no results found/i.test(body);
     if (noResults) {
       queriesWithPosts++; // page worked, just nothing new
       console.log("   no results");
@@ -169,44 +177,48 @@ let session: Awaited<ReturnType<typeof openBrowser>> | undefined;
 try {
   session = await openBrowser({ headless: cfg.headless });
   const page = await firstPage(session.context);
-  for (const q of cfg.queries) {
-    seen.clear(); // DOM markers restart on each page load
-    try {
-      await runQuery(page, q);
-    } catch (err) {
-      if (err instanceof StopRun) throw err;
-      console.warn(`   query failed: ${(err as Error).message}`);
+  try {
+    for (const q of cfg.queries) {
+      seen.clear(); // DOM markers restart on each page load
+      try {
+        await runQuery(page, q);
+      } catch (err) {
+        if (err instanceof StopRun) throw err;
+        console.warn(`   query failed: ${(err as Error).message.split("\n")[0]}`);
+      }
+      await randomDelay(cfg.delayMs);
     }
-    await randomDelay(cfg.delayMs);
+    if (queriesWithPosts === 0) {
+      throw new Error("No search page showed any posts — LinkedIn layout may have changed. See debug/ for screenshots.");
+    }
+  } catch (err) {
+    status = "failed";
+    error = (err as Error).message;
+    console.error(`\n✗ ${error}`);
   }
-  if (queriesWithPosts === 0) {
-    throw new Error("No search page showed any posts — LinkedIn layout may have changed. See debug/ for screenshots.");
-  }
-  finishRun(db, runId, { status, ...stats }); // the run is done; ChatGPT + sheet below don't change it
-  console.log(`\nRun #${runId} success: scanned ${stats.scanned}, matched ${stats.matched}, new in DB ${stats.inserted}`);
+  finishRun(db, runId, { status, ...stats, error });
+  console.log(`\nRun #${runId} ${status}: scanned ${stats.scanned}, matched ${stats.matched}, new in DB ${stats.inserted}`);
+  if (status === "failed") console.log("(a failed run doesn't move the time window — the next run covers it again)");
 
   // 2nd tab: ChatGPT writes the emails → rows go straight to the Google Sheet (drafts created there).
+  // Runs even after a failed collect, so posts that were saved still get processed.
   if (pushConfigured()) {
     try {
       printStats(await processPending(session.context));
     } catch (err) {
-      console.warn(`Sheet/ChatGPT step failed: ${(err as Error).message} — retry with: npm run process`);
+      console.warn(`Sheet/ChatGPT step failed: ${(err as Error).message.split("\n")[0]} — retry with: npm run process`);
     }
   } else {
     console.log("(Google Sheet not configured — see apps-script/SETUP.md)");
   }
 } catch (err) {
+  // the browser didn't start
   status = "failed";
   error = (err as Error).message;
   console.error(`\n✗ ${error}`);
+  finishRun(db, runId, { status, ...stats, error });
 } finally {
   await session?.close();
-  if (status === "failed") finishRun(db, runId, { status, ...stats, error });
 }
 
-if (status === "failed") {
-  console.log(`\nRun #${runId} failed: scanned ${stats.scanned}, matched ${stats.matched}, new in DB ${stats.inserted}`);
-  console.log("(a failed run doesn't move the time window — the next run covers it again)");
-  process.exit(1);
-}
-
+if (status === "failed") process.exit(1);

@@ -11,11 +11,28 @@ export function extractEmails(text: string): string[] {
   const found = normalized.match(EMAIL_RE) ?? [];
   const cleaned = found
     .map((e) => e.toLowerCase().replace(/\.+$/, ""))
-    // a line break can glue the next word on: "info@x.aiplease" -> "info@x.ai"
-    .map((e) => e.replace(/\.([a-z]{2,4}?)(please|thanks|thank|regards|and|or|for|with|to|or)$/, ".$1"))
+    // a line break can glue the next word on: "info@x.aiplease" -> "info@x.ai", "hr@x.comsubject" -> "hr@x.com"
+    .map(unglueTld)
     // drop image file names and similar false positives
     .filter((e) => !/\.(png|jpe?g|gif|webp|svg)$/.test(e));
   return [...new Set(cleaned)];
+}
+
+const COMMON_TLDS = ["com", "in", "co", "io", "ai", "net", "org", "dev", "tech", "us", "uk", "pk", "app", "info"];
+// real TLDs that start with a common one — never cut these
+const LONG_TLDS = new Set([
+  "company", "technology", "technologies", "solutions", "services", "consulting", "digital", "software",
+  "systems", "agency", "network", "online", "international", "institute", "industries", "info", "inc",
+  "comcast", "tech", "app", "careers", "community", "coach", "codes", "cool", "computer", "construction",
+]);
+
+function unglueTld(email: string): string {
+  const m = email.match(/^(.*\.)([a-z]+)$/);
+  if (!m || LONG_TLDS.has(m[2])) return email;
+  const tld = m[2];
+  // longest common TLD that leaves at least 3 extra letters behind ("comsubject" -> "com" + "subject")
+  const base = COMMON_TLDS.filter((t) => tld.startsWith(t) && tld.length - t.length >= 3).sort((a, b) => b.length - a.length)[0];
+  return base ? m[1] + base : email;
 }
 
 export function extractFormLinks(...sources: string[]): string[] {
