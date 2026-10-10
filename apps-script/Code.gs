@@ -10,6 +10,7 @@
  *   SYNC_TOKEN, SHEET_ID, CV_FRONTEND_ID, CV_BACKEND_ID, CV_FULLSTACK_ID
  */
 
+const MY_NAME = 'Sandeep Yadav';  // sender name + CV file names in the emails
 const SHEET_NAME = 'Jobs';
 const MAX_SENDS_PER_DAY = 40; // stay far below Gmail limits and look human
 
@@ -19,10 +20,11 @@ const HEADERS = [
   'Approve', 'Sent At', 'Notes', 'Content',
 ];
 
+const FILE_NAME = MY_NAME.replace(/\s+/g, '_');
 const CV_FILES = {
-  frontend: { prop: 'CV_FRONTEND_ID', name: 'Sandeep_Yadav_Frontend_Developer_CV.pdf' },
-  backend: { prop: 'CV_BACKEND_ID', name: 'Sandeep_Yadav_Backend_Developer_CV.pdf' },
-  fullstack: { prop: 'CV_FULLSTACK_ID', name: 'Sandeep_Yadav_Full_Stack_Developer_CV.pdf' },
+  frontend: { prop: 'CV_FRONTEND_ID', name: `${FILE_NAME}_Frontend_Developer_CV.pdf` },
+  backend: { prop: 'CV_BACKEND_ID', name: `${FILE_NAME}_Backend_Developer_CV.pdf` },
+  fullstack: { prop: 'CV_FULLSTACK_ID', name: `${FILE_NAME}_Full_Stack_Developer_CV.pdf` },
 };
 
 // ───────────────────────────── menu ─────────────────────────────
@@ -126,7 +128,7 @@ function doPost(e) {
       }
 
       if (!ai) {
-        set('Status', p.emails ? 'PENDING' : p.formLinks ? 'FORM' : 'NO_EMAIL');
+        set('Status', p.formLinks ? 'FORM' : 'NO_EMAIL');
       } else if (!ai.relevant) {
         set('Status', 'SKIPPED');
       } else if (contacted.has(String(ai.toEmail).toLowerCase())) {
@@ -166,7 +168,7 @@ function createDraft_(to, subject, message, cvType, cache) {
     cv = DriveApp.getFileById(id).getBlob().setName(CV_FILES[type].name);
     if (cache) cache[type] = cv;
   }
-  return GmailApp.createDraft(to, subject, message, { attachments: [cv], name: 'Sandeep Yadav' });
+  return GmailApp.createDraft(to, subject, message, { attachments: [cv], name: MY_NAME });
 }
 
 // ───────────────────────────── menu actions ─────────────────────────────

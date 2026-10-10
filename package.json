@@ -7,10 +7,6 @@
   "scripts": {
     "login": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/login.ts",
     "collect": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/collect.ts",
-    "posts": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/show.ts",
-    "export": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/show.ts --csv",
-    "runs": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/show.ts --runs",
-    "rematch": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/rematch.ts",
     "process": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/process.ts",
     "test": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx --test src/*.test.ts",
     "typecheck": "tsc --noEmit"

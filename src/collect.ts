@@ -1,5 +1,6 @@
-// Daily run: collects LinkedIn hiring posts published since the last successful run,
-// keeps the ones that match your profile, and stores author + emails in SQLite.
+// Daily run (npm run collect):
+//   1. LinkedIn tab: hiring posts published since the last successful run that match config/search.json
+//   2. ChatGPT tab + Google Sheet: see process.ts
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -209,7 +210,7 @@ try {
       console.warn(`Sheet/ChatGPT step failed: ${(err as Error).message.split("\n")[0]} — retry with: npm run process`);
     }
   } else {
-    console.log("(Google Sheet not configured — see apps-script/SETUP.md)");
+    console.log("(Google Sheet not configured — see docs/start.md)");
   }
 } catch (err) {
   // the browser didn't start

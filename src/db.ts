@@ -65,15 +65,16 @@ export function openDb(): DatabaseSync {
       posted_at_source    TEXT,
       collected_at        TEXT NOT NULL,
       run_id              INTEGER REFERENCES runs(id),
-      status              TEXT NOT NULL DEFAULT 'new' -- new | emailed | form_filled | skipped
+      status              TEXT NOT NULL DEFAULT 'new', -- only 'new' rows are processed
+      pushed_at           TEXT                         -- when it was sent to the Google Sheet
     );
 
     CREATE INDEX IF NOT EXISTS idx_posts_posted_at ON posts(posted_at);
     CREATE INDEX IF NOT EXISTS idx_posts_run ON posts(run_id);
   `);
-  // migrations for DBs created by older versions
+  // DBs created before pushed_at existed
   const cols = (db.prepare(`PRAGMA table_info(posts)`).all() as { name: string }[]).map((c) => c.name);
-  if (!cols.includes("pushed_at")) db.exec(`ALTER TABLE posts ADD COLUMN pushed_at TEXT`); // sent to Google Sheet
+  if (!cols.includes("pushed_at")) db.exec(`ALTER TABLE posts ADD COLUMN pushed_at TEXT`);
   return db;
 }
 

@@ -57,7 +57,7 @@ function toSheetRow(r: Row): SheetRow {
 }
 
 export async function processPending(context: BrowserContext): Promise<ProcessStats> {
-  if (!pushConfigured()) throw new Error("Set APPS_SCRIPT_URL and SYNC_TOKEN in .env first (see apps-script/SETUP.md).");
+  if (!pushConfigured()) throw new Error("Set APPS_SCRIPT_URL and SYNC_TOKEN in .env first (see docs/start.md).");
   const cfg = loadConfig();
   const db = openDb();
   let rows = db
@@ -139,13 +139,7 @@ export function printStats(s: ProcessStats): void {
 }
 
 // Run directly: npm run process
-//   --resend : forget what was sent before and send every post again (the sheet still skips Post IDs it has —
-//              delete those rows in the sheet first if you want them redone with ChatGPT)
 if (import.meta.url === `file://${process.argv[1]}`) {
-  if (process.argv.includes("--resend")) {
-    const n = openDb().prepare(`UPDATE posts SET pushed_at = NULL WHERE status = 'new'`).run().changes;
-    console.log(`Marked ${n} post(s) to be sent again.`);
-  }
   const cfg = loadConfig();
   const session = await openBrowser({ headless: cfg.headless });
   try {

@@ -41,23 +41,23 @@ ${post.content.slice(0, 6000)}
 ---
 
 ## What to decide
-1. relevant — true only if this is a real opening that fits me: JavaScript/TypeScript web stack (React, Next.js, Node.js, NestJS, MERN…), about 2–6 years of experience, in India or remote. Otherwise false.
+1. relevant — true only if this is a real opening that matches "Looking for" in my profile (skills, experience, location). Otherwise false.
    Also false if it looks fake or risky: asks for a fee/deposit, odd or misspelled email domains, "earn $$$ from home", no real company.
 2. cv — which of my CVs to attach:
-   • "frontend"  → the role is mainly React / Next.js / UI work
-   • "backend"   → mainly Node.js / NestJS / APIs / databases
-   • "fullstack" → both sides, MERN / full stack, or unclear
+   • "frontend"  → the role is mainly UI / frontend work
+   • "backend"   → mainly APIs / server / databases
+   • "fullstack" → both sides, or unclear
 3. to_email — exactly one address from the list above to send to (prefer the recruiter / HR / careers address).
 4. role, company, location — as written in the post; "" if not stated. Never guess.
 
 ## How to write the email
-• subject: "Application for <role> – Sandeep Yadav (4+ yrs, <2–3 key skills from the post>)"
+• subject: "Application for <role> – <my name> (<my years of experience>, <2–3 key skills from the post>)"
 • message: plain text, 110–160 words, warm and confident, no buzzword padding:
   – "Hi <first name>," when the address clearly belongs to the post author, otherwise "Hi Hiring Team,"
   – one line saying which role I'm applying for (and the company if known)
   – 2–3 short lines that map the post's key requirements to my real experience and projects
   – mention my CV is attached and I'd be glad to talk
-  – end exactly with: "Regards,\\nSandeep Yadav\\n+91-XXXXXXXXXX\\nlinkedin.com/in/sandeepyadavm"
+  – end with "Regards," then my name, phone and LinkedIn from my profile, each on its own line
 • Never invent anything (notice period, CTC, degrees, skills, companies not in my profile) and don't offer
   anything that isn't in it (GitHub, portfolio, references). No [placeholders].
 

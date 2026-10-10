@@ -5,7 +5,6 @@ import path from "node:path";
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const DATA_DIR = path.join(ROOT, "data");
 export const DEBUG_DIR = path.join(ROOT, "debug");
-export const EXPORT_DIR = path.join(ROOT, "exports");
 export const PROFILE_DIR = path.join(ROOT, ".browser-profile");
 export const DB_PATH = path.join(DATA_DIR, "jobs.db");
 

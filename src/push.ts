@@ -1,4 +1,4 @@
-// Transport to the Google Sheet's Apps Script web app (see apps-script/SETUP.md).
+// Transport to the Google Sheet's Apps Script web app (see docs/start.md).
 // Needs APPS_SCRIPT_URL and SYNC_TOKEN in .env.
 import type { AiReply } from "./chatgpt/prompt.ts";
 
@@ -47,7 +47,7 @@ export async function sheetPostIds(): Promise<Set<string>> {
 async function callSheet(data: Record<string, unknown>): Promise<Record<string, unknown>> {
   const url = process.env.APPS_SCRIPT_URL;
   const token = process.env.SYNC_TOKEN;
-  if (!url || !token) throw new Error("Set APPS_SCRIPT_URL and SYNC_TOKEN in .env first (see apps-script/SETUP.md).");
+  if (!url || !token) throw new Error("Set APPS_SCRIPT_URL and SYNC_TOKEN in .env first (see docs/start.md).");
 
   const payload = JSON.stringify({ token, ...data });
   let lastError = "";
