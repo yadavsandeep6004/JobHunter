@@ -1,13 +1,22 @@
 // Drives chatgpt.com in a browser tab: paste a prompt, wait for the reply, read it back.
 // The reply is read with ChatGPT's own "Copy response" button (exact markdown, no DOM guessing);
 // the clipboard call is captured in the page so your real clipboard is never touched.
-import type { BrowserContext, Page } from "playwright";
+import type { BrowserContext, Locator, Page } from "playwright";
 import { sleep } from "../browser.ts";
 
 const HOME = "https://chatgpt.com/";
-const COMPOSER = 'textarea[name="prompt"]:visible, #prompt-textarea:visible';
-const STOP_BUTTON = 'button[aria-label="Stop generating"], button[data-testid="stop-button"]';
-const COPY_RESPONSE = 'button[aria-label="Copy response"], button[data-testid="copy-turn-action-button"]';
+// logged out: <textarea name="prompt">; logged in: <div contenteditable aria-label="Ask ChatGPT"> (ProseMirror)
+const COMPOSER = [
+  'textarea[name="prompt"]:visible',
+  '#prompt-textarea:visible',
+  '[contenteditable="true"][aria-label="Ask ChatGPT"]:visible',
+  '[contenteditable="true"][data-placeholder="Ask ChatGPT"]:visible',
+  '.ProseMirror[contenteditable="true"]:visible',
+].join(", ");
+// "Stop generating" (logged out) / "Stop streaming" etc. (logged in) while a reply is being written
+const STOP_BUTTON = 'button[aria-label^="Stop"], button[data-testid="stop-button"]';
+// reply's copy button: "Copy response" (logged out) / "Copy" (logged in; the user's own message has "Copy message")
+const COPY_RESPONSE = 'button[aria-label="Copy response"], button[data-testid="copy-turn-action-button"], button[aria-label="Copy"]';
 
 /** ChatGPT refused or limited us — stop sending for this run. */
 export class ChatGptLimitError extends Error {}
@@ -28,6 +37,27 @@ const HOOK_CLIPBOARD = `(() => {
 
 const LIMIT_RE = /reached (?:the|your|our) (?:limit|message limit)|usage limit|too many requests|you've hit the|log in to continue|sign up to continue/i;
 const CHAT_ERROR_RE = /conversation is too long|maximum context|something went wrong|error in message stream|network error/i;
+
+/** Textarea: fill. Rich editor: paste, which keeps the prompt's line breaks (typing "\n" would send early). */
+async function fillComposer(composer: Locator, text: string): Promise<void> {
+  const isTextarea = await composer.evaluate((el) => el.tagName === "TEXTAREA");
+  if (isTextarea) {
+    await composer.fill(text);
+    return;
+  }
+  await composer.click();
+  await composer.evaluate((el, value) => {
+    (el as HTMLElement).focus();
+    const dt = new DataTransfer();
+    dt.setData("text/plain", value);
+    el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, text);
+  // make sure the editor really holds the prompt (not empty, not cut short)
+  const got = await composer.innerText();
+  if (got.replace(/\s+/g, "").length < text.replace(/\s+/g, "").length * 0.9) {
+    await composer.fill(text);
+  }
+}
 
 export class ChatGpt {
   private page!: Page;
@@ -72,7 +102,7 @@ export class ChatGpt {
     const newCopy = page.locator(COPY_RESPONSE.split(", ").map((sel) => `${sel}:not([data-jh-old])`).join(", "));
 
     const composer = page.locator(COMPOSER).first();
-    await composer.fill(prompt);
+    await fillComposer(composer, prompt);
     await sleep(300 + Math.random() * 500);
     await composer.press("Enter");
     this.turns++;

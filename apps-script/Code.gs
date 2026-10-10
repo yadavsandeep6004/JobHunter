@@ -82,6 +82,12 @@ function doPost(e) {
     const sheet = getSheet_();
     const col = colMap_(sheet);
     const data = sheet.getDataRange().getValues();
+
+    // {action: "ids"} → Post IDs already in the sheet, so the Mac doesn't ask ChatGPT about them again
+    if (body.action === 'ids') {
+      return json_({ ok: true, ids: data.slice(1).map((r) => String(r[col['Post ID'] - 1])).filter(Boolean) });
+    }
+
     const existing = new Set();
     const contacted = new Set(); // never email the same address twice
     for (let r = 1; r < data.length; r++) {

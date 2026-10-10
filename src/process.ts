@@ -13,7 +13,7 @@ import { openDb } from "./db.ts";
 import { openBrowser, randomDelay } from "./browser.ts";
 import { ChatGpt, ChatGptLimitError } from "./chatgpt/client.ts";
 import { buildPrompt, parseReply } from "./chatgpt/prompt.ts";
-import { pushConfigured, pushRows, type SheetRow } from "./push.ts";
+import { pushConfigured, pushRows, sheetPostIds, type SheetRow } from "./push.ts";
 
 interface Row {
   id: number;
@@ -60,7 +60,7 @@ export async function processPending(context: BrowserContext): Promise<ProcessSt
   if (!pushConfigured()) throw new Error("Set APPS_SCRIPT_URL and SYNC_TOKEN in .env first (see apps-script/SETUP.md).");
   const cfg = loadConfig();
   const db = openDb();
-  const rows = db
+  let rows = db
     .prepare(`SELECT id, post_urn, posted_at, author_name, author_headline, author_profile_url, emails, form_links,
                      post_url, match_score, matched_skills, experience_text, content
               FROM posts WHERE status = 'new' AND pushed_at IS NULL ORDER BY posted_at`)
@@ -68,6 +68,18 @@ export async function processPending(context: BrowserContext): Promise<ProcessSt
   const markSent = db.prepare(`UPDATE posts SET pushed_at = ? WHERE id = ?`);
   const stats: ProcessStats = { sent: 0, drafted: 0, skippedByAi: 0, failed: 0, left: 0 };
   if (rows.length === 0) return stats;
+
+  // Skip posts the sheet already has — no point spending ChatGPT messages on them.
+  // (Also checks the deployed sheet script is current before any ChatGPT work.)
+  const inSheet = await sheetPostIds();
+  {
+    const now = new Date().toISOString();
+    for (const r of rows) if (inSheet.has(r.post_urn)) markSent.run(now, r.id);
+    const before = rows.length;
+    rows = rows.filter((r) => !inSheet.has(r.post_urn));
+    if (before !== rows.length) console.log(`${before - rows.length} post(s) already in the sheet — skipped.`);
+    if (rows.length === 0) return stats;
+  }
 
   // Posts without an email don't need ChatGPT — send them in one go.
   const noEmail = rows.filter((r) => !r.emails);
