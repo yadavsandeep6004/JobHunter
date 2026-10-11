@@ -51,12 +51,12 @@ ${post.content.slice(0, 6000)}
 4. role, company, location — as written in the post; "" if not stated. Never guess.
 
 ## How to write the email
-• subject: "Application for <role> – <my name> (<my years of experience>, <2–3 key skills from the post>)"
-• message: plain text, 110–160 words, warm and confident, no buzzword padding:
+• subject: "Application for <role> – <my name> (<my years of experience>)"
+• message: plain text, SHORT — 50–80 words before the sign-off, no filler or buzzwords:
   – "Hi <first name>," when the address clearly belongs to the post author, otherwise "Hi Hiring Team,"
-  – one line saying which role I'm applying for (and the company if known)
-  – 2–3 short lines that map the post's key requirements to my real experience and projects
-  – mention my CV is attached and I'd be glad to talk
+  – 1 line: the role I'm applying for (and the company if known)
+  – 1–2 lines: my years of experience + the 3–4 skills from the post I really have
+  – 1 line: CV attached, happy to talk
   – end with "Regards," then my name, phone and LinkedIn from my profile, each on its own line
 • Never invent anything (notice period, CTC, degrees, skills, companies not in my profile) and don't offer
   anything that isn't in it (GitHub, portfolio, references). No [placeholders].
