@@ -8,7 +8,8 @@
     "login": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/login.ts",
     "process": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/process.ts",
     "test": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx --test src/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:extension": "node tests/extension.e2e.mjs"
   },
   "dependencies": {
     "playwright": "^1.55.0"

@@ -3,21 +3,43 @@
   "name": "Job Hunter — Send to Sheet",
   "version": "1.0.0",
   "description": "Adds a 📩 Send button to LinkedIn posts. One click sends the post to your Job Hunter Google Sheet.",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "https://www.linkedin.com/*",
     "https://script.google.com/*",
     "https://script.googleusercontent.com/*"
   ],
-  "background": { "service_worker": "background.js", "type": "module" },
+  "background": {
+    "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ],
+    "type": "module"
+  },
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/*"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "https://www.linkedin.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
   "options_page": "options.html",
-  "action": { "default_title": "Job Hunter settings" }
+  "action": {
+    "default_title": "Job Hunter settings"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "job-hunter@local",
+      "strict_min_version": "121.0"
+    }
+  }
 }
