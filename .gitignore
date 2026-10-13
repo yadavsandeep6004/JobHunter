@@ -1,6 +1,9 @@
 node_modules/
 .browser-profile/
-data/
-debug/
 .env
 .DS_Store
+# your CV PDFs stay local (upload them to Google Drive)
+cv/
+# left over from older versions; safe to delete
+data/
+debug/

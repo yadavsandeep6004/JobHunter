@@ -5,7 +5,7 @@
  *            NEW (has an email) / FORM / NO_EMAIL
  *  Mac:      npm run process → "pending" (NEW rows) → ChatGPT writes {cv, to_email, subject, message}
  *            → "result" → Gmail draft with the matching CV attached (Status DRAFTED)
- *  You:      check Gmail → Drafts, tick "Approve" → ⚡ Auto Apply → "Send approved drafts" → SENT + date
+ *  You:      open Gmail → Drafts, read each email and send the good ones yourself
  *
  * Script Properties (Project Settings → Script properties), filled by "⚙️ Setup":
  *   SYNC_TOKEN, SHEET_ID, CV_FRONTEND_ID, CV_BACKEND_ID, CV_FULLSTACK_ID
@@ -13,11 +13,10 @@
 
 const MY_NAME = 'Sandeep Yadav';  // sender name + CV file names in the emails
 const SHEET_NAME = 'Jobs';
-const MAX_SENDS_PER_DAY = 40; // stay far below Gmail limits and look human
 
 const HEADERS = [
   'Post ID', 'Posted At', 'Added On', 'Status', 'Author', 'Headline', 'Emails', 'Form Links', 'Post URL',
-  'CV', 'Role', 'Company', 'To', 'Subject', 'Email Body', 'Draft ID', 'Approve', 'Sent At', 'Notes', 'Content',
+  'CV', 'Role', 'Company', 'To', 'Subject', 'Email Body', 'Draft ID', 'Notes', 'Content',
 ];
 
 const FILE_NAME = MY_NAME.replace(/\s+/g, '_');
@@ -32,9 +31,6 @@ const CV_FILES = {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('⚡ Auto Apply')
-    .addItem('Send approved drafts', 'sendApproved')
-    .addItem('Approve all drafted', 'approveAllDrafted')
-    .addSeparator()
     .addItem('Create missing drafts (READY rows)', 'createMissingDrafts')
     .addItem('⚙️ Setup', 'setup')
     .addToUi();
@@ -123,12 +119,10 @@ function capture_(sheet, col, rows) {
     set('Emails', p.emails);
     set('Form Links', p.formLinks);
     set('Post URL', p.postUrl);
-    set('Approve', false);
     set('Notes', note);
     set('Content', String(p.content || '').slice(0, 45000));
     const rowNum = sheet.getLastRow() + 1;
     sheet.getRange(rowNum, 1, 1, width).setValues([row]);
-    sheet.getRange(rowNum, col['Approve']).insertCheckboxes();
     known.push({ row: rowNum, author: p.author, jd });
     added++;
   }
@@ -193,6 +187,7 @@ function result_(sheet, col, postId, ai) {
   const contacted = new Set();
   for (let i = 1; i < data.length; i++) {
     const st = data[i][col['Status'] - 1];
+    // (SENT: rows from the older version that sent from the sheet)
     if (i !== r && (st === 'DRAFTED' || st === 'SENT' || st === 'READY')) contacted.add(String(data[i][col['To'] - 1]).toLowerCase());
   }
   // same company + role already drafted / sent (ChatGPT's reading of the post)
@@ -260,52 +255,6 @@ function createMissingDrafts() {
   alert_(`Drafts created: ${n}` + (failed ? `\nFailed: ${failed} (see Notes)` : ''));
 }
 
-function sendApproved() {
-  const sheet = getSheet_();
-  const col = colMap_(sheet);
-  const data = sheet.getDataRange().getValues();
-  const tz = Session.getScriptTimeZone();
-  const today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
-
-  let sentToday = 0;
-  for (let r = 1; r < data.length; r++) {
-    const at = data[r][col['Sent At'] - 1];
-    if (at instanceof Date && Utilities.formatDate(at, tz, 'yyyy-MM-dd') === today) sentToday++;
-  }
-
-  let sent = 0, failed = 0, capped = false;
-  for (let r = 1; r < data.length; r++) {
-    if (data[r][col['Status'] - 1] !== 'DRAFTED' || data[r][col['Approve'] - 1] !== true) continue;
-    if (sentToday >= MAX_SENDS_PER_DAY || MailApp.getRemainingDailyQuota() < 5) { capped = true; break; }
-    try {
-      GmailApp.getDraft(data[r][col['Draft ID'] - 1]).send();
-      sheet.getRange(r + 1, col['Status']).setValue('SENT');
-      sheet.getRange(r + 1, col['Sent At']).setValue(new Date());
-      sent++; sentToday++;
-    } catch (err) {
-      // e.g. draft deleted in Gmail
-      sheet.getRange(r + 1, col['Status']).setValue('ERROR');
-      sheet.getRange(r + 1, col['Notes']).setValue('Send failed: ' + String(err.message || err).slice(0, 250));
-      failed++;
-    }
-    Utilities.sleep(1500 + Math.random() * 2000);
-  }
-  alert_(`Sent: ${sent}\nFailed: ${failed}` + (capped ? `\n\nDaily cap of ${MAX_SENDS_PER_DAY} reached — the rest go tomorrow.` : ''));
-}
-
-function approveAllDrafted() {
-  const sheet = getSheet_();
-  const col = colMap_(sheet);
-  const data = sheet.getDataRange().getValues();
-  let n = 0;
-  for (let r = 1; r < data.length; r++) {
-    if (data[r][col['Status'] - 1] === 'DRAFTED' && data[r][col['Approve'] - 1] !== true) {
-      sheet.getRange(r + 1, col['Approve']).setValue(true); n++;
-    }
-  }
-  alert_(`Approved ${n} draft(s). Review them in Gmail before running "Send approved drafts".`);
-}
-
 // ───────────────────────────── helpers ─────────────────────────────
 
 function getSheet_() {
@@ -317,7 +266,7 @@ function getSheet_() {
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
     sheet.setFrozenRows(1);
     const col = colMap_(sheet);
-    for (const name of ['Posted At', 'Added On', 'Sent At']) {
+    for (const name of ['Posted At', 'Added On']) {
       sheet.getRange(2, col[name], sheet.getMaxRows() - 1, 1).setNumberFormat('dd-mmm-yyyy hh:mm');
     }
     sheet.getDataRange().setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);

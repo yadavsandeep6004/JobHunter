@@ -1,56 +1,70 @@
-# Job Hunter — Setup & Daily Use
+# Job Hunter — Complete Setup Guide
 
-You browse LinkedIn yourself and click **📩 Send** on good hiring posts. ChatGPT writes each application
-email, and a Gmail draft appears with the right CV (Frontend / Backend / Full Stack) attached.
-Nothing automated ever runs on LinkedIn.
+**What it does:** you browse LinkedIn and click **📩 Send** on hiring posts you like. ChatGPT reads each
+post, decides if it fits you, picks your Frontend / Backend / Full Stack CV and writes a short email.
+A Gmail draft with that CV attached appears — you read it and send it yourself.
 
-## One-time setup
+```
+LinkedIn (you browse) ──📩──▶ Google Sheet "Jobs" ──npm run process──▶ ChatGPT ──▶ Gmail draft + CV ──▶ you send
+```
 
-1. Install **Node.js 22+** and **Google Chrome**, then run `npm install` in the project folder.
-2. Edit `config/profile.md` — your details and the "Looking for" line (ChatGPT only uses facts from here).
-3. Upload your 3 CV PDFs (frontend, backend, full stack) to Google Drive.
-4. Create a Google Sheet → **Extensions → Apps Script** → paste `apps-script/Code.gs`.
-   Set `MY_NAME` at the top → **Save**.
-5. Reload the sheet → **⚡ Auto Apply → ⚙️ Setup** → allow access, paste the 3 CV Drive links.
-   Copy the **sync token** it shows.
-6. In Apps Script: **Deploy → New deployment → ⚙️ Web app** → Execute as **Me**, access **Anyone**
-   → copy the **Web app URL**.
-7. Run `cp .env.example .env` and put the URL and token in `.env`.
-8. Chrome → `chrome://extensions` → turn on **Developer mode** → **Load unpacked** → pick the `extension` folder.
-9. Click the extension's icon (pin it from the 🧩 menu) → paste the same URL and token → **Save** → **Test connection**.
-10. Run `npm run login` → log in to ChatGPT → quit that Chrome window with **Cmd+Q**.
+Nothing runs automatically on LinkedIn, and nothing is ever sent without you.
 
-## Every day
+---
 
-1. Browse LinkedIn as usual (search "hiring react developer", your feed…) and click **📩 Send** on good posts.
-2. Run `npm run process` — ChatGPT writes the emails, Gmail drafts appear with the right CV.
-3. Open Gmail → **Drafts**, read / edit them; in the sheet tick **Approve** on the ones to send.
-4. **⚡ Auto Apply → Send approved drafts** — sends them and fills in **Sent At**.
+## What you need
 
-Optional: `./scripts/install-daily.sh 21 0` runs step 2 every day at 21:00 (`--uninstall` to stop).
+- A Mac / Windows / Linux computer with **Google Chrome** and **Node.js 22+** (nodejs.org).
+- A **Google account** (Sheets, Drive, Gmail) and a **ChatGPT account** (the free plan works).
+- Your CV as **3 PDFs**: frontend, backend and full stack (the same CV 3 times is fine too).
 
-## Test it (safe — nothing is sent until you approve)
+## Setup (once, about 15 minutes)
 
-1. `npm test` and `npm run test:extension` — offline checks with a fake LinkedIn page and fake sheet.
-   (First time: `npx playwright install chromium`.)
-2. Extension icon → **Test connection** → should say "Connected to your sheet ✓".
-3. On LinkedIn, click **📩 Send** on one post → button shows ✓ and a row appears in the **Jobs** tab.
-4. Run `npm run process` → the row becomes **DRAFTED** and a draft with the CV appears in Gmail.
-5. Read the draft. Delete it if it was only a test — nothing is sent until you Approve + Send.
+### 1. Project
+1. Download / clone this project, open a terminal in its folder and run `npm install`.
+2. Edit `config/profile.md` with your details and the **Looking for** line — ChatGPT only uses facts from here.
 
-## Other browsers
+### 2. Google Drive
+3. Upload your 3 CV PDFs to Google Drive (keep them private).
 
-| Browser | How to install |
-|---|---|
-| Chrome | `chrome://extensions` → **Developer mode** on → **Load unpacked** → `extension` folder. |
-| Edge | `edge://extensions` → **Developer mode** on → **Load unpacked** → `extension` folder. |
-| Brave | `brave://extensions` → **Developer mode** on → **Load unpacked** → `extension` folder. |
-| Arc / Opera / Vivaldi | Same as Chrome via their extensions page (`arc://extensions`, `opera://extensions`, `vivaldi://extensions`). |
-| Firefox | `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → `extension/manifest.json`. |
-|  | Then `about:addons` → Job Hunter → **Permissions** → allow linkedin.com and google.com. Removed on restart. |
-| Safari | Not supported (needs an Xcode-built app). Use any browser above. |
+### 3. Google Sheet + script
+4. Create a new Google Sheet → **Extensions → Apps Script**.
+5. Delete what's in `Code.gs`, paste all of `apps-script/Code.gs`, set `MY_NAME` on line 13 → **Save** 💾.
+6. Back in the sheet, reload the page → menu **⚡ Auto Apply → ⚙️ Setup**.
+7. Google asks for permission → your account → **Advanced → Go to … (unsafe) → Allow** (it's your own script).
+8. Paste the Drive links of your 3 CVs when asked → copy the **sync token** shown at the end.
+   A **Jobs** tab is created — it's the only tab the flow uses.
 
-The browser where you click 📩 doesn't matter — `npm run process` always uses the project's own Chrome.
+### 4. Publish the script (so the extension and your computer can reach it)
+9. In Apps Script: **Deploy → New deployment → ⚙️ → Web app**.
+10. Execute as **Me**, Who has access **Anyone** → **Deploy** → copy the **Web app URL** (ends in `/exec`).
+    "Anyone" only means reachable — every request must carry your secret sync token.
+
+### 5. Connect your computer
+11. In the project folder run `cp .env.example .env` (Windows: `copy .env.example .env`).
+12. Open `.env` and paste the Web app URL and the sync token.
+
+### 6. Chrome extension (the 📩 button)
+13. Chrome → `chrome://extensions` → turn on **Developer mode** → **Load unpacked** → pick the `extension` folder.
+14. Pin it (🧩 menu → 📌), click its icon → paste the same URL and token → **Save** → **Test connection** ✓.
+    Other browsers: see [Other browsers](#other-browsers).
+
+### 7. ChatGPT
+15. Run `npm run login` → a Chrome window opens → log in to ChatGPT → quit that window (**Cmd+Q** / close it).
+
+### 8. Try it once
+16. On LinkedIn, click **📩 Send** on one hiring post that has an email → a row appears in **Jobs**.
+17. Run `npm run process` → that row turns **DRAFTED** and a draft with your CV appears in Gmail.
+
+---
+
+## Daily use
+
+1. Browse LinkedIn (e.g. search *hiring react developer* → **Posts**, **Latest**) and click **📩 Send** on good posts.
+2. Run `npm run process` — ChatGPT writes the emails; Gmail drafts appear with the right CV.
+3. Open Gmail → **Drafts**, read each one, edit if needed, and press **Send** on the ones you want.
+
+Tip: 10–30 posts a day at a normal pace. Posts with an email in them are the ones that become emails.
 
 ## The 📩 button
 
@@ -59,32 +73,54 @@ The browser where you click 📩 doesn't matter — `npm run process` always use
 | ✓ Sent · email found | Saved as **NEW** — `npm run process` will write the email. |
 | ✓ Sent · form | Saved as **FORM** — apply through the form link yourself. |
 | ✓ Sent · no email | Saved as **NO_EMAIL** — message the author on LinkedIn. |
-| ✓ Already in sheet | You sent this post before. |
-| ⚠ Same job already in sheet | Same JD as a post you already sent (repost / another recruiter) — saved as **DUPLICATE**, no email. |
+| ⚠ Same job already in sheet | Same JD as a post you already sent — saved as **DUPLICATE**, no email. |
+| ✓ Already in sheet | You clicked this exact post before. |
 | ✗ Retry | Hover it to see why (usually settings or the deployment). |
 
-## Sheet status
+## Sheet "Jobs" — Status column
 
 | Status | Meaning |
 |---|---|
 | NEW | Has an email; waiting for `npm run process`. |
-| DRAFTED | Gmail draft with the right CV is ready — tick **Approve** to send. |
-| SENT | Sent; date is in **Sent At**. |
-| SKIPPED | ChatGPT says it's not a fit (reason in **Notes**). |
-| DUPLICATE | Same job as another row, or that address was already emailed — never gets a second email. |
+| DRAFTED | Gmail draft with the right CV is ready — read and send it from Gmail. |
+| SKIPPED | ChatGPT says it isn't a fit (reason in **Notes**). |
+| DUPLICATE | Same job or same email as another row — never gets a second email. |
 | READY | Email written but the draft failed → **⚡ Auto Apply → Create missing drafts**. |
 | FORM / NO_EMAIL | No email to send to — use the form link / message the author. |
-| ERROR | Sending failed; see **Notes**. |
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `npm run login` | Log in to ChatGPT in the project's own Chrome profile. |
+| `npm run process` | NEW posts → ChatGPT → Gmail drafts. Safe to run any time; it continues where it stopped. |
+| `npm test` | Unit tests (parsing, prompt, ChatGPT reply). |
+| `npm run test:extension` | Extension test on a fake LinkedIn page (first time: `npx playwright install chromium`). |
+
+## Other browsers
+
+| Browser | Install the extension |
+|---|---|
+| Edge / Brave / Arc / Opera / Vivaldi | Same as Chrome via their extensions page (`edge://extensions`, `brave://extensions`, …). |
+| Firefox | `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → `extension/manifest.json`, |
+|  | then `about:addons` → Job Hunter → **Permissions** → allow linkedin.com and google.com (removed on restart). |
+| Safari | Not supported — use one of the browsers above. |
+
+`npm run process` always uses the project's own Chrome for ChatGPT, whatever browser you click 📩 in.
 
 ## If something goes wrong
 
-| Message | Fix |
+| Problem | Fix |
 |---|---|
 | No 📩 buttons on LinkedIn | Reload the page; check the extension is on in `chrome://extensions`. |
-| `bad token` | The token in `.env` / the extension must equal Script properties → `SYNC_TOKEN`. |
-| `deployment is an old version` | Apps Script: **Deploy → Manage deployments → ✏️ → New version → Deploy**. |
-| `ChatGPT limit reached` | Run `npm run process` later; posts stay **NEW** until they're done. |
+| `bad token` | Token in `.env` and the extension must equal Apps Script → Project Settings → Script properties → `SYNC_TOKEN`. |
+| `deployment is an old version` | Apps Script: **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. |
+| `ChatGPT limit reached` | Run `npm run process` later — posts stay **NEW** until they're done. |
 | ChatGPT not logged in | Run `npm run login` again. |
+| Wrong CV / tone in emails | Edit `config/profile.md` (facts + "Looking for"); prompt rules are in `src/chatgpt/prompt.ts`. |
 
-After editing `Code.gs`, always redeploy as a **New version** (the URL stays the same).
-After editing the extension, click **↻ reload** on it in `chrome://extensions`.
+## Updating
+
+- Changed `apps-script/Code.gs`? Paste it again → **Save** → **Deploy → Manage deployments → ✏️ → New version → Deploy**.
+  The URL stays the same.
+- Changed the `extension` folder? `chrome://extensions` → **↻** on Job Hunter → reload LinkedIn.
