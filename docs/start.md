@@ -29,6 +29,29 @@ Nothing automated ever runs on LinkedIn.
 
 Optional: `./scripts/install-daily.sh 21 0` runs step 2 every day at 21:00 (`--uninstall` to stop).
 
+## Test it (safe — nothing is sent until you approve)
+
+1. `npm test` and `npm run test:extension` — offline checks with a fake LinkedIn page and fake sheet.
+   (First time: `npx playwright install chromium`.)
+2. Extension icon → **Test connection** → should say "Connected to your sheet ✓".
+3. On LinkedIn, click **📩 Send** on one post → button shows ✓ and a row appears in the **Jobs** tab.
+4. Run `npm run process` → the row becomes **DRAFTED** and a draft with the CV appears in Gmail.
+5. Read the draft. Delete it if it was only a test — nothing is sent until you Approve + Send.
+
+## Other browsers
+
+| Browser | How to install |
+|---|---|
+| Chrome | `chrome://extensions` → **Developer mode** on → **Load unpacked** → `extension` folder. |
+| Edge | `edge://extensions` → **Developer mode** on → **Load unpacked** → `extension` folder. |
+| Brave | `brave://extensions` → **Developer mode** on → **Load unpacked** → `extension` folder. |
+| Arc / Opera / Vivaldi | Same as Chrome via their extensions page (`arc://extensions`, `opera://extensions`, `vivaldi://extensions`). |
+| Firefox | `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → `extension/manifest.json`. |
+|  | Then `about:addons` → Job Hunter → **Permissions** → allow linkedin.com and google.com. Removed on restart. |
+| Safari | Not supported (needs an Xcode-built app). Use any browser above. |
+
+The browser where you click 📩 doesn't matter — `npm run process` always uses the project's own Chrome.
+
 ## The 📩 button
 
 | Button shows | Meaning |
