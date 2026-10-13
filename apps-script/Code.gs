@@ -1,10 +1,11 @@
 /**
- * Job Hunter — Google Sheet side (ChatGPT flow).
+ * Job Hunter — Google Sheet side.
  *
- *  Mac: npm run collect → LinkedIn posts → ChatGPT writes {cv, to_email, subject, message}
- *       → POST to doPost() here → row in "Jobs" + Gmail draft with the matching CV attached (Status DRAFTED)
- *  You: check Gmail → Drafts, tick "Approve" in the sheet
- *  ⚡ Auto Apply → "Send approved drafts" → Status SENT + Sent At date
+ *  LinkedIn: you click 📩 Send on a post (Chrome extension) → doPost "capture" → row in "Jobs":
+ *            NEW (has an email) / FORM / NO_EMAIL
+ *  Mac:      npm run process → "pending" (NEW rows) → ChatGPT writes {cv, to_email, subject, message}
+ *            → "result" → Gmail draft with the matching CV attached (Status DRAFTED)
+ *  You:      check Gmail → Drafts, tick "Approve" → ⚡ Auto Apply → "Send approved drafts" → SENT + date
  *
  * Script Properties (Project Settings → Script properties), filled by "⚙️ Setup":
  *   SYNC_TOKEN, SHEET_ID, CV_FRONTEND_ID, CV_BACKEND_ID, CV_FULLSTACK_ID
@@ -16,8 +17,7 @@ const MAX_SENDS_PER_DAY = 40; // stay far below Gmail limits and look human
 
 const HEADERS = [
   'Post ID', 'Posted At', 'Added On', 'Status', 'Author', 'Headline', 'Emails', 'Form Links', 'Post URL',
-  'Score', 'Skills', 'Experience', 'CV', 'Role', 'Company', 'To', 'Subject', 'Email Body', 'Draft ID',
-  'Approve', 'Sent At', 'Notes', 'Content',
+  'CV', 'Role', 'Company', 'To', 'Subject', 'Email Body', 'Draft ID', 'Approve', 'Sent At', 'Notes', 'Content',
 ];
 
 const FILE_NAME = MY_NAME.replace(/\s+/g, '_');
@@ -64,13 +64,12 @@ function setup() {
   });
   ui.alert('Setup done',
     (problems.length ? `⚠️ Could not open the ${problems.join(', ')} CV — check the Drive link.\n\n` : '✓ CVs found.\n\n') +
-    'job-hunter/.env on your Mac needs:\n\n' +
-    `SYNC_TOKEN=${props.getProperty('SYNC_TOKEN')}\n` +
-    'APPS_SCRIPT_URL=<Web app URL from Deploy → Manage deployments>',
+    `Sync token (for .env and the Chrome extension):\n${props.getProperty('SYNC_TOKEN')}\n\n` +
+    'Web app URL: Deploy → Manage deployments',
     ui.ButtonSet.OK);
 }
 
-// ───────────────────────────── receive rows from the Mac ─────────────────────────────
+// ───────────────────────────── web app (extension + Mac) ─────────────────────────────
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -79,84 +78,106 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents);
     const token = PropertiesService.getScriptProperties().getProperty('SYNC_TOKEN');
     if (!token) return json_({ ok: false, error: 'SYNC_TOKEN is not set in THIS Apps Script project — run ⚙️ Setup here' });
-    if (body.token !== token) return json_({ ok: false, error: 'bad token — SYNC_TOKEN in .env does not match Script properties → SYNC_TOKEN' });
+    if (body.token !== token) return json_({ ok: false, error: 'bad token — it must match Script properties → SYNC_TOKEN' });
 
     const sheet = getSheet_();
     const col = colMap_(sheet);
-    const data = sheet.getDataRange().getValues();
-
-    // {action: "ids"} → Post IDs already in the sheet, so the Mac doesn't ask ChatGPT about them again
-    if (body.action === 'ids') {
-      return json_({ ok: true, ids: data.slice(1).map((r) => String(r[col['Post ID'] - 1])).filter(Boolean) });
-    }
-
-    const existing = new Set();
-    const contacted = new Set(); // never email the same address twice
-    for (let r = 1; r < data.length; r++) {
-      existing.add(String(data[r][col['Post ID'] - 1]));
-      const st = data[r][col['Status'] - 1];
-      if (st === 'DRAFTED' || st === 'SENT' || st === 'READY') contacted.add(String(data[r][col['To'] - 1]).toLowerCase());
-    }
-
-    const now = new Date();
-    const cvCache = {};
-    let added = 0, skipped = 0, drafted = 0;
-    for (const p of body.rows || []) {
-      if (!p.postId || existing.has(p.postId)) { skipped++; continue; }
-      existing.add(p.postId);
-
-      const row = new Array(HEADERS.length).fill('');
-      const set = (name, v) => { row[col[name] - 1] = v == null ? '' : v; };
-      set('Post ID', p.postId);
-      set('Posted At', p.postedAt ? new Date(p.postedAt) : '');
-      set('Added On', now);
-      set('Author', p.author);
-      set('Headline', p.headline);
-      set('Emails', p.emails);
-      set('Form Links', p.formLinks);
-      set('Post URL', p.postUrl);
-      set('Score', p.score);
-      set('Skills', p.skills);
-      set('Experience', p.experience);
-      set('Approve', false);
-      set('Content', String(p.content || '').slice(0, 45000));
-
-      const ai = p.ai;
-      if (ai) {
-        set('CV', ai.cv); set('Role', ai.role); set('Company', ai.company); set('To', ai.toEmail);
-        set('Subject', ai.subject); set('Email Body', ai.message); set('Notes', ai.reason);
-      }
-
-      if (!ai) {
-        set('Status', p.formLinks ? 'FORM' : 'NO_EMAIL');
-      } else if (!ai.relevant) {
-        set('Status', 'SKIPPED');
-      } else if (contacted.has(String(ai.toEmail).toLowerCase())) {
-        set('Status', 'DUPLICATE'); set('Notes', 'Already emailed ' + ai.toEmail);
-      } else {
-        try {
-          const draft = createDraft_(ai.toEmail, ai.subject, ai.message, ai.cv, cvCache);
-          set('Draft ID', draft.getId());
-          set('Status', 'DRAFTED');
-          drafted++;
-        } catch (err) {
-          set('Status', 'READY'); // email written, draft failed → "Create missing drafts"
-          set('Notes', 'Draft failed: ' + String(err.message || err).slice(0, 200));
-        }
-        contacted.add(String(ai.toEmail).toLowerCase());
-      }
-
-      const rowNum = sheet.getLastRow() + 1;
-      sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([row]);
-      sheet.getRange(rowNum, col['Approve']).insertCheckboxes();
-      added++;
-    }
-    return json_({ ok: true, added, skipped, drafted });
+    if (body.action === 'ping') return json_({ ok: true });
+    if (body.action === 'capture') return json_(capture_(sheet, col, body.rows || []));
+    if (body.action === 'pending') return json_(pending_(sheet, col));
+    if (body.action === 'result') return json_(result_(sheet, col, body.postId, body.ai));
+    return json_({ ok: false, error: `unknown action "${body.action}" — update the extension / Mac code` });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Posts sent from the 📩 button. Duplicates (same Post ID) are ignored. */
+function capture_(sheet, col, rows) {
+  const ids = new Set(columnValues_(sheet, col['Post ID']));
+  const width = sheet.getLastColumn();
+  let added = 0, status = '';
+  for (const p of rows) {
+    if (!p.postId || ids.has(p.postId)) continue;
+    ids.add(p.postId);
+    status = p.emails ? 'NEW' : p.formLinks ? 'FORM' : 'NO_EMAIL';
+    const row = new Array(width).fill('');
+    const set = (name, v) => { row[col[name] - 1] = v == null ? '' : v; };
+    set('Post ID', p.postId);
+    set('Posted At', p.postedAt ? new Date(p.postedAt) : '');
+    set('Added On', new Date());
+    set('Status', status);
+    set('Author', p.author);
+    set('Headline', p.headline);
+    set('Emails', p.emails);
+    set('Form Links', p.formLinks);
+    set('Post URL', p.postUrl);
+    set('Approve', false);
+    set('Content', String(p.content || '').slice(0, 45000));
+    const rowNum = sheet.getLastRow() + 1;
+    sheet.getRange(rowNum, 1, 1, width).setValues([row]);
+    sheet.getRange(rowNum, col['Approve']).insertCheckboxes();
+    added++;
+  }
+  return { ok: true, added, status };
+}
+
+/** NEW rows waiting for ChatGPT. */
+function pending_(sheet, col) {
+  const data = sheet.getDataRange().getValues();
+  const posts = [];
+  for (let r = 1; r < data.length; r++) {
+    const get = (name) => data[r][col[name] - 1];
+    if (get('Status') !== 'NEW') continue;
+    posts.push({
+      postId: String(get('Post ID')),
+      author: String(get('Author')),
+      headline: String(get('Headline')),
+      emails: String(get('Emails')).split(',').map((s) => s.trim()).filter(Boolean),
+      content: String(get('Content')),
+    });
+  }
+  return { ok: true, posts };
+}
+
+/** ChatGPT's answer for one post → SKIPPED / DUPLICATE / DRAFTED (Gmail draft with the right CV) / READY. */
+function result_(sheet, col, postId, ai) {
+  const data = sheet.getDataRange().getValues();
+  const r = data.findIndex((row, i) => i > 0 && String(row[col['Post ID'] - 1]) === String(postId));
+  if (r < 0) return { ok: false, error: `post ${postId} not found in the sheet` };
+  // already handled (e.g. the Mac retried after a flaky answer) → never create a second draft
+  const current = data[r][col['Status'] - 1];
+  if (current !== 'NEW') return { ok: true, status: current };
+  const rowNum = r + 1;
+  const set = (name, v) => sheet.getRange(rowNum, col[name]).setValue(v == null ? '' : v);
+
+  set('CV', ai.cv); set('Role', ai.role); set('Company', ai.company); set('To', ai.toEmail);
+  set('Subject', ai.subject); set('Email Body', ai.message); set('Notes', ai.reason);
+
+  let status;
+  const contacted = new Set();
+  for (let i = 1; i < data.length; i++) {
+    const st = data[i][col['Status'] - 1];
+    if (i !== r && (st === 'DRAFTED' || st === 'SENT' || st === 'READY')) contacted.add(String(data[i][col['To'] - 1]).toLowerCase());
+  }
+  if (!ai.relevant) {
+    status = 'SKIPPED';
+  } else if (contacted.has(String(ai.toEmail).toLowerCase())) {
+    status = 'DUPLICATE';
+    set('Notes', 'Already emailed ' + ai.toEmail);
+  } else {
+    try {
+      set('Draft ID', createDraft_(ai.toEmail, ai.subject, ai.message, ai.cv).getId());
+      status = 'DRAFTED';
+    } catch (err) {
+      status = 'READY'; // email written, draft failed → "Create missing drafts"
+      set('Notes', 'Draft failed: ' + String(err.message || err).slice(0, 200));
+    }
+  }
+  set('Status', status);
+  return { ok: true, status };
 }
 
 function createDraft_(to, subject, message, cvType, cache) {
@@ -253,13 +274,16 @@ function getSheet_() {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
     sheet.setFrozenRows(1);
-    sheet.getRange('B:C').setNumberFormat('dd-mmm-yyyy hh:mm');
-    sheet.getRange('U:U').setNumberFormat('dd-mmm-yyyy hh:mm');
-    sheet.getRange('A:W').setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+    const col = colMap_(sheet);
+    for (const name of ['Posted At', 'Added On', 'Sent At']) {
+      sheet.getRange(2, col[name], sheet.getMaxRows() - 1, 1).setNumberFormat('dd-mmm-yyyy hh:mm');
+    }
+    sheet.getDataRange().setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
   }
   return sheet;
 }
 
+/** Column number by header name. Extra columns (e.g. from older versions) are fine. */
 function colMap_(sheet) {
   const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const map = {};
@@ -267,6 +291,11 @@ function colMap_(sheet) {
   const missing = HEADERS.filter((h) => !map[h]);
   if (missing.length) throw new Error(`"${SHEET_NAME}" sheet is missing columns: ${missing.join(', ')}`);
   return map;
+}
+
+function columnValues_(sheet, colNum) {
+  const n = sheet.getLastRow() - 1;
+  return n > 0 ? sheet.getRange(2, colNum, n, 1).getValues().map((r) => String(r[0])) : [];
 }
 
 function json_(obj) {

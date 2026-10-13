@@ -1,0 +1,15 @@
+.jh-send {
+  margin-right: 6px;
+  padding: 4px 10px;
+  border: 1px solid #0a66c2;
+  border-radius: 14px;
+  background: #fff;
+  color: #0a66c2;
+  font: 600 13px/1.4 -apple-system, system-ui, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.jh-send:hover:not(:disabled) { background: #eaf3fc; }
+.jh-send:disabled { cursor: default; opacity: 0.85; }
+.jh-send.jh-ok { border-color: #057642; color: #057642; background: #effaf3; }
+.jh-send.jh-err { border-color: #b24020; color: #b24020; background: #fdf1ee; }

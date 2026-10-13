@@ -1,13 +1,13 @@
 # Job Hunter
 
-Free daily job-application helper:
+Free job-application helper — you pick the posts, it writes and drafts the emails:
 
 ```
-npm run collect
- ├─ Chrome tab 1: LinkedIn  → hiring posts since the last run that match config/search.json
- ├─ Chrome tab 2: ChatGPT   → per post: fit or not, which CV, which email, subject + message (JSON)
- └─ Google Sheet "Jobs"     → row per post + Gmail draft with the matching CV attached
-You review the drafts, tick Approve, and send from the sheet menu.
+LinkedIn (you browse)  → click 📩 Send on a post (Chrome extension)
+                           → Google Sheet "Jobs": NEW / FORM / NO_EMAIL
+npm run process        → ChatGPT tab: fit or not, which CV, which email, subject + message
+                           → sheet creates the Gmail draft with the matching CV
+You                    → review drafts, tick Approve, ⚡ Auto Apply → Send approved drafts
 ```
 
 **Setup and daily steps: [docs/start.md](docs/start.md)**
@@ -16,14 +16,12 @@ You review the drafts, tick Approve, and send from the sheet menu.
 
 | Path | What |
 |---|---|
+| `extension/` | Chrome extension: the 📩 Send button (`content.js`) and the sheet call (`background.js`). |
+| `extension/lib/` | Email / form-link / post-time parsing — shared with the Node tests. |
+| `apps-script/Code.gs` | Google Sheet side: stores posts, creates Gmail drafts, sends approved ones. |
+| `src/process.ts` | Reads NEW posts from the sheet, asks ChatGPT, sends the answers back. |
+| `src/chatgpt/` | Drives chatgpt.com in the project's Chrome; the prompt and reply parsing. |
 | `config/profile.md` | Your details — the only facts ChatGPT may use. |
-| `config/search.json` | LinkedIn queries, skills, filters, ChatGPT pacing. |
-| `src/collect.ts` | Daily run: LinkedIn search → local DB → `process.ts`. |
-| `src/linkedin/` | Reads posts from LinkedIn search pages. |
-| `src/match.ts`, `src/extract.ts` | Filters (skills, experience, location) and email / form-link parsing. |
-| `src/chatgpt/` | Drives chatgpt.com in a tab; the prompt and reply parsing. |
-| `src/process.ts`, `src/push.ts` | Sends each post + ChatGPT's answer to the Google Sheet. |
-| `apps-script/Code.gs` | Google Sheet side: receives rows, creates Gmail drafts, sends approved ones. |
-| `data/jobs.db` | Local SQLite: collected posts and which were sent to the sheet (ChatGPT answers live only in the sheet). |
+| `config/settings.json` | ChatGPT pacing (posts per chat, timeouts, delays). |
 
-LinkedIn and ChatGPT don't allow automated use of their sites — keep it to one run a day.
+Nothing automated runs on LinkedIn: the extension only reads a post when you click its button.

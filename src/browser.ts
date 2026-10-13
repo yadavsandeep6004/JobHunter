@@ -3,10 +3,9 @@ import { existsSync } from "node:fs";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { PROFILE_DIR } from "./config.ts";
 
-// We launch the real Chrome app ourselves (no automation flags) with a separate
-// profile in .browser-profile/, then attach Playwright over the DevTools port.
-// This keeps "Sign in with Google" working and looks like a normal browser.
-// Your password is never stored by this tool — only Chrome's own cookies.
+// We launch the real Chrome app ourselves (no automation flags) with a separate profile in
+// .browser-profile/ (used for ChatGPT), then attach Playwright over the DevTools port.
+// This keeps "Sign in with Google" working. Your password is never stored — only Chrome's cookies.
 
 const CHROME_PATHS = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -59,7 +58,7 @@ async function quitProfileChrome(): Promise<void> {
   }
 }
 
-/** Real Chrome with a DevTools port, attached via Playwright — used by the collector. */
+/** Real Chrome with a DevTools port, attached via Playwright — used for the ChatGPT tab. */
 export async function openBrowser(opts: { headless: boolean }): Promise<Session> {
   await quitProfileChrome();
   const args = [...baseArgs(), `--remote-debugging-port=${DEBUG_PORT}`, "--window-size=1280,900"];
@@ -92,14 +91,6 @@ export async function openBrowser(opts: { headless: boolean }): Promise<Session>
 
 export async function firstPage(ctx: BrowserContext): Promise<Page> {
   return ctx.pages()[0] ?? (await ctx.newPage());
-}
-
-export function isLoggedOutUrl(url: string): boolean {
-  return /linkedin\.com\/(login|authwall|signup|uas\/login)|[?&]session_redirect=/.test(url);
-}
-
-export function isChallengeUrl(url: string): boolean {
-  return /linkedin\.com\/checkpoint\//.test(url);
 }
 
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));

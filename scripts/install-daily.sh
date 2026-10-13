@@ -1,10 +1,10 @@
 #!/bin/zsh
-# Schedules `npm run collect` daily via macOS launchd.
+# Runs `npm run process` daily via macOS launchd (ChatGPT writes emails for posts you sent with 📩).
 # Usage:  ./scripts/install-daily.sh [HH] [MM]      (default 09:00)
 # Remove: ./scripts/install-daily.sh --uninstall
 set -euo pipefail
 
-LABEL="com.jobhunter.collect"
+LABEL="com.jobhunter.process"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -29,17 +29,17 @@ cat > "$PLIST" <<EOF
   <key>Label</key><string>$LABEL</string>
   <key>WorkingDirectory</key><string>$ROOT</string>
   <key>ProgramArguments</key>
-  <array><string>$NPM</string><string>run</string><string>collect</string></array>
+  <array><string>$NPM</string><string>run</string><string>process</string></array>
   <key>EnvironmentVariables</key>
   <dict><key>PATH</key><string>$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
   <key>StartCalendarInterval</key>
   <dict><key>Hour</key><integer>$HOUR</integer><key>Minute</key><integer>$MINUTE</integer></dict>
-  <key>StandardOutPath</key><string>$ROOT/data/collect.log</string>
-  <key>StandardErrorPath</key><string>$ROOT/data/collect.log</string>
+  <key>StandardOutPath</key><string>$ROOT/data/process.log</string>
+  <key>StandardErrorPath</key><string>$ROOT/data/process.log</string>
 </dict>
 </plist>
 EOF
 
 launchctl unload "$PLIST" 2>/dev/null || true
 launchctl load "$PLIST"
-printf "Scheduled daily at %02d:%02d. Log: %s/data/collect.log\n" "$HOUR" "$MINUTE" "$ROOT"
+printf "Scheduled daily at %02d:%02d. Log: %s/data/process.log\n" "$HOUR" "$MINUTE" "$ROOT"

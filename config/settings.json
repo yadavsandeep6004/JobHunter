@@ -1,0 +1,9 @@
+{
+  "headless": false,
+
+  "chatgpt": {
+    "maxPostsPerChat": 8,
+    "replyTimeoutSec": 120,
+    "delayMs": { "min": 4000, "max": 9000 }
+  }
+}
