@@ -12,4 +12,5 @@
 .jh-send:hover:not(:disabled) { background: #eaf3fc; }
 .jh-send:disabled { cursor: default; opacity: 0.85; }
 .jh-send.jh-ok { border-color: #057642; color: #057642; background: #effaf3; }
+.jh-send.jh-warn { border-color: #915907; color: #915907; background: #fdf6e8; }
 .jh-send.jh-err { border-color: #b24020; color: #b24020; background: #fdf1ee; }

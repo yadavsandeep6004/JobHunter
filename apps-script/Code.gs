@@ -94,15 +94,24 @@ function doPost(e) {
   }
 }
 
-/** Posts sent from the 📩 button. Duplicates (same Post ID) are ignored. */
+/**
+ * Posts sent from the 📩 button. Same Post ID → ignored. Same job text as a post already in the sheet
+ * (a repost, another recruiter, a different email) → saved as DUPLICATE so it never gets a second email.
+ */
 function capture_(sheet, col, rows) {
-  const ids = new Set(columnValues_(sheet, col['Post ID']));
+  const data = sheet.getDataRange().getValues();
+  const ids = new Set(data.slice(1).map((r) => String(r[col['Post ID'] - 1])));
+  const known = data.slice(1).map((r, i) => ({ row: i + 2, author: r[col['Author'] - 1], jd: jdShingles_(r[col['Content'] - 1]) }));
   const width = sheet.getLastColumn();
-  let added = 0, status = '';
+  let added = 0, status = '', note = '';
   for (const p of rows) {
     if (!p.postId || ids.has(p.postId)) continue;
     ids.add(p.postId);
-    status = p.emails ? 'NEW' : p.formLinks ? 'FORM' : 'NO_EMAIL';
+    const jd = jdShingles_(p.content);
+    const same = known.find((k) => sameJob_(jd, k.jd));
+    status = same ? 'DUPLICATE' : p.emails ? 'NEW' : p.formLinks ? 'FORM' : 'NO_EMAIL';
+    note = same ? `Same job as row ${same.row} (${same.author})` : '';
+
     const row = new Array(width).fill('');
     const set = (name, v) => { row[col[name] - 1] = v == null ? '' : v; };
     set('Post ID', p.postId);
@@ -115,13 +124,37 @@ function capture_(sheet, col, rows) {
     set('Form Links', p.formLinks);
     set('Post URL', p.postUrl);
     set('Approve', false);
+    set('Notes', note);
     set('Content', String(p.content || '').slice(0, 45000));
     const rowNum = sheet.getLastRow() + 1;
     sheet.getRange(rowNum, 1, 1, width).setValues([row]);
     sheet.getRange(rowNum, col['Approve']).insertCheckboxes();
+    known.push({ row: rowNum, author: p.author, jd });
     added++;
   }
-  return { ok: true, added, status };
+  return { ok: true, added, status, note };
+}
+
+/** The job text as a set of 3-word phrases, ignoring emails, links, hashtags, emoji and punctuation. */
+function jdShingles_(text) {
+  const words = String(text || '').toLowerCase()
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, ' ')
+    .replace(/#[\w-]+/g, ' ')
+    .replace(/[^a-z0-9+#]+/g, ' ')
+    .split(' ').filter((w) => w.length > 1);
+  const set = new Set();
+  for (let i = 0; i + 2 < words.length; i++) set.add(words[i] + ' ' + words[i + 1] + ' ' + words[i + 2]);
+  return set;
+}
+
+/** Same job if ≥ 80% of the shorter post's phrases appear in the other (reposts often add or drop a line). */
+function sameJob_(a, b) {
+  if (a.size < 10 || b.size < 10) return false; // too short to judge
+  const [small, big] = a.size <= b.size ? [a, b] : [b, a];
+  let shared = 0;
+  for (const x of small) if (big.has(x)) shared++;
+  return shared / small.size >= 0.8;
 }
 
 /** NEW rows waiting for ChatGPT. */
@@ -162,11 +195,20 @@ function result_(sheet, col, postId, ai) {
     const st = data[i][col['Status'] - 1];
     if (i !== r && (st === 'DRAFTED' || st === 'SENT' || st === 'READY')) contacted.add(String(data[i][col['To'] - 1]).toLowerCase());
   }
+  // same company + role already drafted / sent (ChatGPT's reading of the post)
+  const key = (company, role) => company && role ? (String(company) + '|' + String(role)).toLowerCase().replace(/[^a-z0-9|]+/g, '') : '';
+  const thisJob = key(ai.company, ai.role);
+  const sameJobRow = thisJob && data.findIndex((row, i) => i > 0 && i !== r &&
+    ['DRAFTED', 'SENT', 'READY'].includes(row[col['Status'] - 1]) && key(row[col['Company'] - 1], row[col['Role'] - 1]) === thisJob);
+
   if (!ai.relevant) {
     status = 'SKIPPED';
   } else if (contacted.has(String(ai.toEmail).toLowerCase())) {
     status = 'DUPLICATE';
     set('Notes', 'Already emailed ' + ai.toEmail);
+  } else if (sameJobRow > 0) {
+    status = 'DUPLICATE';
+    set('Notes', `Same job (${ai.role} at ${ai.company}) as row ${sameJobRow + 1}`);
   } else {
     try {
       set('Draft ID', createDraft_(ai.toEmail, ai.subject, ai.message, ai.cv).getId());

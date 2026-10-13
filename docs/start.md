@@ -60,6 +60,7 @@ The browser where you click 📩 doesn't matter — `npm run process` always use
 | ✓ Sent · form | Saved as **FORM** — apply through the form link yourself. |
 | ✓ Sent · no email | Saved as **NO_EMAIL** — message the author on LinkedIn. |
 | ✓ Already in sheet | You sent this post before. |
+| ⚠ Same job already in sheet | Same JD as a post you already sent (repost / another recruiter) — saved as **DUPLICATE**, no email. |
 | ✗ Retry | Hover it to see why (usually settings or the deployment). |
 
 ## Sheet status
@@ -70,7 +71,7 @@ The browser where you click 📩 doesn't matter — `npm run process` always use
 | DRAFTED | Gmail draft with the right CV is ready — tick **Approve** to send. |
 | SENT | Sent; date is in **Sent At**. |
 | SKIPPED | ChatGPT says it's not a fit (reason in **Notes**). |
-| DUPLICATE | You already emailed that address. |
+| DUPLICATE | Same job as another row, or that address was already emailed — never gets a second email. |
 | READY | Email written but the draft failed → **⚡ Auto Apply → Create missing drafts**. |
 | FORM / NO_EMAIL | No email to send to — use the form link / message the author. |
 | ERROR | Sending failed; see **Notes**. |

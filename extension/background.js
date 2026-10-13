@@ -19,7 +19,7 @@ async function handle(msg) {
   if (msg.type === "ping") return callSheet(url, { token, action: "ping" });
   if (msg.type === "capture") {
     const res = await callSheet(url, { token, action: "capture", rows: [toRow(msg.post)] });
-    return { ok: res.ok, error: res.error, added: res.added, status: res.status };
+    return { ok: res.ok, error: res.error, added: res.added, status: res.status, note: res.note };
   }
   return { ok: false, error: `Unknown message ${msg.type}` };
 }

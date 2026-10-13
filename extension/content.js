@@ -40,9 +40,10 @@
       if (!data.text) throw new Error("Couldn't read this post's text");
       const res = await chrome.runtime.sendMessage({ type: "capture", post: data });
       if (!res || !res.ok) throw new Error((res && res.error) || "No answer from the extension");
-      btn.classList.add("jh-ok");
-      btn.textContent = res.added ? `✓ Sent${res.status === "NEW" ? " · email found" : res.status === "FORM" ? " · form" : " · no email"}` : "✓ Already in sheet";
-      btn.title = res.added ? `Status in sheet: ${res.status}` : "This post is already in your sheet";
+      const label = { NEW: "✓ Sent · email found", FORM: "✓ Sent · form", NO_EMAIL: "✓ Sent · no email", DUPLICATE: "⚠ Same job already in sheet" };
+      btn.classList.add(res.status === "DUPLICATE" ? "jh-warn" : "jh-ok");
+      btn.textContent = res.added ? label[res.status] || "✓ Sent" : "✓ Already in sheet";
+      btn.title = res.added ? res.note || `Status in sheet: ${res.status}` : "This post is already in your sheet";
     } catch (err) {
       btn.disabled = false;
       btn.classList.add("jh-err");
