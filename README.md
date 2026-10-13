@@ -21,7 +21,7 @@ You                    → read the drafts in Gmail and send the good ones
 | `src/process.ts` | Reads NEW posts from the sheet, asks ChatGPT, sends the answers back. |
 | `src/chatgpt/` | Drives chatgpt.com in the project's Chrome; the prompt and reply parsing. |
 | `src/login.ts` | One-time ChatGPT login in the project's Chrome profile. |
-| `config/profile.md` | Your details — the only facts ChatGPT may use. |
+| `config/profile.example.md` | Template for `config/profile.md` (your details — the only facts ChatGPT may use; git-ignored). |
 | `config/settings.json` | ChatGPT pacing (posts per chat, timeouts, delays). |
 
 Nothing automated runs on LinkedIn: the extension only reads a post when you click its button,

@@ -22,14 +22,15 @@ Nothing runs automatically on LinkedIn, and nothing is ever sent without you.
 
 ### 1. Project
 1. Download / clone this project, open a terminal in its folder and run `npm install`.
-2. Edit `config/profile.md` with your details and the **Looking for** line — ChatGPT only uses facts from here.
+2. Copy `config/profile.example.md` to `config/profile.md` and fill in your details and the **Looking for** line.
+   ChatGPT only uses facts from this file (it stays on your computer, never committed).
 
 ### 2. Google Drive
 3. Upload your 3 CV PDFs to Google Drive (keep them private).
 
 ### 3. Google Sheet + script
 4. Create a new Google Sheet → **Extensions → Apps Script**.
-5. Delete what's in `Code.gs`, paste all of `apps-script/Code.gs`, set `MY_NAME` on line 13 → **Save** 💾.
+5. Delete what's in `Code.gs`, paste all of `apps-script/Code.gs`, set `MY_NAME` (line 13) to your name → **Save** 💾.
 6. Back in the sheet, reload the page → menu **⚡ Auto Apply → ⚙️ Setup**.
 7. Google asks for permission → your account → **Advanced → Go to … (unsafe) → Allow** (it's your own script).
 8. Paste the Drive links of your 3 CVs when asked → copy the **sync token** shown at the end.

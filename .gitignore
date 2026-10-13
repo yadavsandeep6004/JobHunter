@@ -2,5 +2,6 @@ node_modules/
 .browser-profile/
 .env
 .DS_Store
-# your CV PDFs stay local (upload them to Google Drive)
+# personal, stays on your computer
 cv/
+config/profile.md

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { ROOT } from "../config.ts";
 import { extractJson } from "./client.ts";
@@ -23,14 +23,21 @@ export interface AiReply {
   message: string;
 }
 
-const profile = () => readFileSync(path.join(ROOT, "config", "profile.md"), "utf8").trim();
+/** Your details from config/profile.md (git-ignored; start from config/profile.example.md). */
+export function loadProfile(): string {
+  const file = path.join(ROOT, "config", "profile.md");
+  if (!existsSync(file)) {
+    throw new Error("config/profile.md is missing — copy config/profile.example.md to config/profile.md and fill it in.");
+  }
+  return readFileSync(file, "utf8").trim();
+}
 
 /** One self-contained prompt per post, so starting a new chat never loses context. */
-export function buildPrompt(post: PostForAi): string {
+export function buildPrompt(post: PostForAi, profile: string = loadProfile()): string {
   return `You are my job-application assistant. Read the LinkedIn hiring post and my profile, then write the application email I will send to the recruiter.
 
 ## My profile — the ONLY facts you may use about me
-${profile()}
+${profile}
 
 ## LinkedIn post
 Author: ${post.author ?? "unknown"}

@@ -11,7 +11,7 @@
  *   SYNC_TOKEN, SHEET_ID, CV_FRONTEND_ID, CV_BACKEND_ID, CV_FULLSTACK_ID
  */
 
-const MY_NAME = 'Sandeep Yadav';  // sender name + CV file names in the emails
+const MY_NAME = 'Your Name';  // ← your name: sender name + CV file names in the emails
 const SHEET_NAME = 'Jobs';
 
 const HEADERS = [

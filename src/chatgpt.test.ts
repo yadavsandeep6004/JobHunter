@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { extractJson } from "./chatgpt/client.ts";
 import { buildPrompt, parseReply } from "./chatgpt/prompt.ts";
 
@@ -28,9 +29,10 @@ test("unknown cv falls back to fullstack; not-relevant needs no message", () => 
 });
 
 test("prompt contains the post, emails and the profile", () => {
-  const p = buildPrompt({ author: "Priya", headline: "HR @ Acme", emails: ["hr@acme.in"], content: "Hiring React dev" });
+  const profile = readFileSync(new URL("../config/profile.example.md", import.meta.url), "utf8");
+  const p = buildPrompt({ author: "Priya", headline: "HR @ Acme", emails: ["hr@acme.in"], content: "Hiring React dev" }, profile);
   assert.match(p, /Hiring React dev/);
   assert.match(p, /hr@acme\.in/);
-  assert.match(p, /Primathon/);
+  assert.match(p, /Looking for:/);
   assert.match(p, /```json/);
 });
